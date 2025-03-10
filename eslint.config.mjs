@@ -1,5 +1,6 @@
 import react from "eslint-plugin-react";
 import reactNative from "eslint-plugin-react-native";
+import globals from "globals";
 import babelParser from "@babel/eslint-parser";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +24,7 @@ export default [...compat.extends("eslint:recommended", "plugin:react/recommende
     languageOptions: {
         globals: {
             ...reactNative.environments["react-native"]["react-native"],
+            ...globals.browser,
         },
 
         parser: babelParser,
