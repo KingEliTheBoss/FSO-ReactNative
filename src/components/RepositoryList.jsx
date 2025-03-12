@@ -1,13 +1,10 @@
-import { FlatList, View, StyleSheet } from "react-native";
+import { FlatList, View, StyleSheet, TextInput } from "react-native";
 import RepositoryItem from "./RepositoryItem";
 import { useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
+import { Picker } from "@react-native-picker/picker";
 import useRepositories from "../hooks/useRepositories";
-
-const styles = StyleSheet.create({
-    separator: {
-        height: 10
-    }
-});
+import theme from "../theme";
 
 /*const repositories = [
     {
@@ -56,18 +53,87 @@ const styles = StyleSheet.create({
     }
 ];*/
 
+const styles = StyleSheet.create({
+    separator: {
+        height: 10
+    },
+    mainView: {
+        padding: 15,
+        backgroundColor: theme.colors.white,
+        gap: 15
+    },
+    fields: {
+        height: 60,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: theme.colors.textSecondary,
+        paddingLeft: 25,
+        fontSize: theme.fontSizes.subheading
+    },
+});
+
 const ItemSeparator = () => <View style={styles.separator} />;
 
-const RepositoryList = () => {
-    const { repositories } = useRepositories();
+export const RepositoryListContainer = ({ repositories, handleSortSelection, filterWord, handleFilterWord, onEndReach }) => {
+    const [selectedOrder, setSelectedOrder] = useState("latest");
 
     const repositoryNodes = repositories
         ? repositories.edges.map(edge => edge.node)
         : [];
 
     return (
-        <FlatList data={repositoryNodes} renderItem={RepositoryItem} ItemSeparatorComponent={ItemSeparator} />
+        <FlatList
+            data={repositoryNodes}
+            renderItem={({ item }) => <RepositoryItem item={item} />}
+            ItemSeparatorComponent={ItemSeparator}
+            ListHeaderComponent={
+                <View style={styles.mainView}>
+                    <TextInput
+                        style={styles.fields}
+                        placeholder="Filter"
+                        value={filterWord}
+                        onChangeText={(value) => handleFilterWord(value)} />
+                    <Picker
+                        selectedValue={selectedOrder}
+                        onValueChange={(itemValue, itemIndex) => {
+                            handleSortSelection(itemValue);
+                            setSelectedOrder(itemValue);
+                        }}
+                    >
+                        <Picker.Item label="Select and item..." enabled={false} />
+                        <Picker.Item label="Latest repositories" value={"latest"} />
+                        <Picker.Item label="Highest rated repositories" value={"highest"} />
+                        <Picker.Item label="Lowest rated repositories" value={"lowest"} />
+                    </Picker>
+                </View>
+            }
+            onEndReached={onEndReach}
+            onEndReachedThreshold={0.5}
+        />
     )
+};
+
+const RepositoryList = () => {
+    const [sortSelected, setSortSelected] = useState("latest");
+    const [filterWord, setFilterWord] = useState("");
+    const [debouncedFilter] = useDebounce(filterWord, 500);
+
+    const orderBy = sortSelected === "latest" ? "CREATED_AT" : "RATING_AVERAGE";
+    const orderDirection = sortSelected === "lowest" ? "ASC" : "DESC";
+
+    const { repositories, fetchMore } = useRepositories({ first: 8, orderBy, orderDirection, searchKeyword: debouncedFilter });
+    
+    const onEndReach = ()=>{
+        fetchMore();
+    };
+
+    return <RepositoryListContainer
+        repositories={repositories}
+        sortSelected={sortSelected}
+        handleSortSelection={(selection) => setSortSelected(selection)}
+        filterWord={filterWord}
+        handleFilterWord={(word) => setFilterWord(word)}
+        onEndReach={onEndReach} />
 };
 
 export default RepositoryList;

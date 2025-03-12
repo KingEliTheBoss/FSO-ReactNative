@@ -16,7 +16,8 @@ const styles = StyleSheet.create({
 });
 
 const AppBar = () => {
-    const { data, error, loading } = useQuery(GET_ME, { fetchPolicy: "cache-and-network" });
+    const { data, error, loading } = useQuery(GET_ME, { variables: { includeReviews: false }, fetchPolicy: "cache-and-network" });
+    
     if (!data) {
         return null;
     }
@@ -25,9 +26,11 @@ const AppBar = () => {
         <View style={styles.container}>
             <ScrollView horizontal>
                 <AppBarTab tabText={"Repositories"} route={"/"} />
-                {data.me
-                    ? <AppBarTab tabText={"Sign Out"} route={"/signout"} />
-                    : <AppBarTab tabText={"Sign in"} route={"/signin"} />}
+                <AppBarTab tabText={"Create a review"} route={"/createReview"} />
+                {data.me && <AppBarTab tabText={"My Reviews"} route={"/myReviews"} />}
+                {data.me && <AppBarTab tabText={"Sign Out"} route={"/signout"} />}
+                {!data.me && <AppBarTab tabText={"Sign in"} route={"/signin"} />}
+                {!data.me && <AppBarTab tabText={"Sign Up"} route={"/signup"} />}
             </ScrollView>
         </View>
     );
